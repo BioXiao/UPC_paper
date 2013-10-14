@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo 'Updating files in git repository'
+now=`date +'%b-%d-%Y-%H-%M-%S'`
+message="Code changes for $now"
+
+git add --all .
+git commit -m "$message"
+git pull origin master
+git push -u origin master
+
+echo "==============================================="
+echo "================ Done updating ================"
+echo "==============================================="
