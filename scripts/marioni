@@ -1,0 +1,278 @@
+#!/bin/bash
+
+dataDir=compute/Marioni
+##u133Plus2AnnotationFile18=library/HG-U133_Plus_2.na29.annot.csv
+u133Plus2MetaFile18=library/U133_Plus2_Meta_hg18.txt
+u133Plus2AnnotationFile19=library/HG-U133_Plus_2.na33.annot.csv
+u133Plus2MetaFile19=library/U133_Plus2_Meta_hg19.txt
+geneSymbolMetaFile19=library/Ensembl_CRCh37_GeneSymbol_Meta.txt
+entrezGeneSymbolsFile=library/Entrez_gene_symbols.txt
+
+source scripts/create_temp_files
+source scripts/rnaseq/paths
+
+########################################
+# Perform Affy normalization
+########################################
+
+#cd SCAN/raw/
+#rm *
+#wget http://www.ncbi.nlm.nih.gov/geosuppl/?acc=GSE11045
+#mv * GSE11045.tar
+#tar xvf *
+#rm *.tar
+#gunzip *
+#cd ..
+#for f in raw/*
+#do
+#  ./scripts/normalizeFile $f
+#done
+#./scripts/summarize 1 .expr.txt Affy
+#./scripts/summarize 2 .prob.txt Affy
+#./scripts/summarize 1 .exprgene.txt
+#./scripts/summarize 2 .probgene.txt
+#cd ~/Pipeline/
+
+#mkdir -p summarization/Marioni
+#for x in expr prob exprgene probgene
+#do
+#  mv -v SCAN/summarized/GSM279060.$x.txt summarization/Marioni/Kidney1.array.$x.txt
+#  mv -v SCAN/summarized/GSM279061.$x.txt summarization/Marioni/Kidney2.array.$x.txt
+#  mv -v SCAN/summarized/GSM279062.$x.txt summarization/Marioni/Kidney3.array.$x.txt
+#  mv -v SCAN/summarized/GSM279063.$x.txt summarization/Marioni/Liver1.array.$x.txt
+#  mv -v SCAN/summarized/GSM279064.$x.txt summarization/Marioni/Liver2.array.$x.txt
+#  mv -v SCAN/summarized/GSM279065.$x.txt summarization/Marioni/Liver3.array.$x.txt
+#
+#  scripts/buildMatrix "summarization/Marioni/Kidney*.array.$x.txt" matrices/Marioni.Kidney.array.$x.txt
+#  scripts/buildMatrix "summarization/Marioni/Liver*.array.$x.txt" matrices/Marioni.Liver.array.$x.txt
+#
+#  python2 code/ReplaceText.py matrices/Marioni.Kidney.array.$x.txt .array.$x.txt " Array" matrices/Marioni.Kidney.array.$x.txt
+#  python2 code/ReplaceText.py matrices/Marioni.Liver.array.$x.txt .array.$x.txt " Array" matrices/Marioni.Liver.array.$x.txt
+#done
+
+#echo -e "Gene\tGene" > $tmpFile1
+#cat $entrezGeneSymbolsFile >> $tmpFile1
+#for tissue in Kidney Liver
+#do
+#  python2 code/ReplaceTextByLine.py matrices/Marioni.$tissue.array.exprgene.txt _at "" $tmpFile2
+#  python2 code/MergeMatrixOnRowNames.py $tmpFile1 $tmpFile2 $tmpFile3
+#  python2 code/SelectColumns.py $tmpFile3 1,2,3,4 $tmpFile4
+#  python2 code/AverageDuplicateRowValues.py $tmpFile4 matrices/Marioni.$tissue.array.exprgene.txt True
+#  python2 code/ReplaceTextByLine.py matrices/Marioni.$tissue.array.probgene.txt _at "" $tmpFile2
+#  python2 code/MergeMatrixOnRowNames.py $tmpFile1 $tmpFile2 $tmpFile3
+#  python2 code/SelectColumns.py $tmpFile3 1,2,3,4 $tmpFile4
+#  python2 code/AverageDuplicateRowValues.py $tmpFile4 matrices/Marioni.$tissue.array.probgene.txt True
+#done
+
+#python2 code/TransformData.py matrices/Marioni.Kidney.array.prob.txt True barcode 2 matrices/Marioni.Kidney.array.probb.txt
+#python2 code/TransformData.py matrices/Marioni.Liver.array.prob.txt True barcode 2 matrices/Marioni.Liver.array.probb.txt
+#python2 code/TransformData.py matrices/Marioni.Kidney.array.probgene.txt True barcode 2 matrices/Marioni.Kidney.array.probgeneb.txt
+#python2 code/TransformData.py matrices/Marioni.Liver.array.probgene.txt True barcode 2 matrices/Marioni.Liver.array.probgeneb.txt
+
+#Rscript --vanilla code/FrmaNormalize.R SCAN/raw matrices/Marioni.array.frma.txt matrices/Marioni.array.barc.txt matrices/Marioni.array.barp.txt matrices/Marioni.array.barl.txt matrices/Marioni.array.barz.txt
+#for x in frma barc barp barl barz
+#do
+#  python2 code/ReplaceText.py matrices/Marioni.array.$x.txt .CEL " Array" matrices/Marioni.array.$x.txt
+#done
+
+function selectCols {
+  python2 code/SelectColumns.py matrices/Marioni.array.$1.txt "$2" $tmpFile1
+  cp $tmpFile1 matrices/Marioni.$3.array.$1.txt
+}
+
+#selectCols frma 0,1,2,3 Kidney
+#selectCols barp 0,1,2,3 Kidney
+#selectCols barc 0,1,2,3 Kidney
+#selectCols barl 0,1,2,3 Kidney
+#selectCols barz 0,1,2,3 Kidney
+#selectCols frma 0,4,5,6 Liver
+#selectCols barp 0,4,5,6 Liver
+#selectCols barc 0,4,5,6 Liver
+#selectCols barl 0,4,5,6 Liver
+#selectCols barz 0,4,5,6 Liver
+
+#rm -v SCAN/raw/* SCAN/normalized/*
+
+########################################
+# Parse meta file
+########################################
+
+function parseAffyAnnotationFile {
+  annotationFile=$1
+  genomeDir=$2
+  outFile=$3
+
+  python2 code/PrintLinesNotStartingWith.py $annotationFile "#" > $tmpFile1
+  python2 code/ReplaceText.py $tmpFile1 "\",\"" "\t" $tmpFile2
+  python2 code/ReplaceText.py $tmpFile2 "\"" "" $tmpFile1
+  python2 code/SelectColumns.py $tmpFile1 0,12 $tmpFile2
+  tail -n +2 $tmpFile2 > $tmpFile1
+  python2 code/InsertColumnViaExpression.py $tmpFile1 "x[1].split(' ')[0].split(':')[0]" $tmpFile2
+  python2 code/FilterFile.py $tmpFile2 "len(x[1].split(' ')[0].split(':')) > 1" 0 $tmpFile1
+  python2 code/InsertColumnViaExpression.py $tmpFile1 "x[1].split(' ')[0].split(':')[1].split('-')[0]" $tmpFile2
+  python2 code/InsertColumnViaExpression.py $tmpFile2 "x[1].split(' ')[0].split(':')[1].split('-')[1]" $tmpFile1
+  python2 code/SelectColumns.py $tmpFile1 0,2,3,4 $tmpFile2
+  python2 code/AddLengthGCToMeta.py $tmpFile2 $genomeDir $outFile
+}
+
+### This file isn't the right one. Actually, I'm not sure where I got the other meta file, but it is close.
+###parseAffyAnnotationFile $u133Plus2AnnotationFile18 Genomes/hg18 $u133Plus2MetaFile18
+
+#parseAffyAnnotationFile $u133Plus2AnnotationFile19 $genomeChromosomesDir $u133Plus2MetaFile19
+
+########################################
+# Align RNA-Seq
+########################################
+
+#m=10
+#j=5
+#k=3
+#a=0.8
+#for id in SRR002320 SRR002321 SRR002322 SRR002323 SRR002324 SRR002325
+#do
+#  qsub scripts/gnumap16.script -v fastQFile=compute/Marioni/$id.fastq,genomeFastaFile=Genomes/hg18/hg18.fa,outPath=compute/Marioni/Output/${id}_${m}_${j}_${k}_${a},m=$m,j=$j,k=$k,a=$a
+#done
+
+#seq 20 25 | parallel --max-procs 6 -v scripts/rnaseq/process_tophat_from_sra ftp://ftp-trace.ncbi.nlm.nih.gov/sra/sra-instant/reads/ByRun/sra/SRR/SRR002/SRR0023{}/SRR0023{}.sra $dataDir "'--num-threads 16 --no-coverage-search'" 32
+
+#for f in $dataDir/*.bam
+#do
+#  $samToolsDir/samtools view -c -F 4 $f > ${f/\.tophat\.bam/.depth}
+#done
+
+########################################
+# Summarize RNA-Seq
+########################################
+
+#for id in SRR002320 SRR002321 SRR002322 SRR002323 SRR002324 SRR002325
+#do
+#  qsub scripts/map_sgr -l nodes=1:ppn=1,pmem=4gb,walltime=2:00:00 -N map_sgr -q batch -v sgrDir=compute/Marioni/Output,sampleID=$id,inFilePattern="${id}_10_5_3_0.8_*.sgr",metaFile=$u133Plus2MetaFile18,sgrSegmentSize=8,outFileSuffix=mapped
+#done
+
+#for id in SRR002320 SRR002321 SRR002322 SRR002323 SRR002324 SRR002325
+#do
+#  rm -f compute/Marioni/Output/${id}.sgr
+#done
+
+#for bamFile in $dataDir/*tophat.bam
+#do
+#  ./scripts/rnaseq/htseq_gene_count $bamFile no ${bamFile/\.bam/.geneCounts} &
+#done
+#wait
+
+#for bamFile in $dataDir/*tophat.bam
+#do
+#  outFile=${bamFile/\.bam/.psCounts}
+#  echo Counting reads for $bamFile
+#  ./scripts/rnaseq/pileup_count $bamFile $genomeFastaFile $u133Plus2MetaFile19 $outFile &
+#done
+#wait
+
+########################################
+# Matricize
+########################################
+
+#rm -fv summarization/Marioni/*gnumap*
+#rm -fv summarization/Marioni/*tophat*
+#rm -fv matrices/Marioni*gnumap*
+#rm -fv matrices/Marioni*tophat*
+
+#cp -v compute/Marioni/Output/SRR002320.mapped summarization/Marioni/Kidney1.gnumap.readsraw.txt
+#cp -v compute/Marioni/Output/SRR002321.mapped summarization/Marioni/Liver1.gnumap.readsraw.txt
+#cp -v compute/Marioni/Output/SRR002322.mapped summarization/Marioni/Liver2.gnumap.readsraw.txt
+#cp -v compute/Marioni/Output/SRR002323.mapped summarization/Marioni/Liver3.gnumap.readsraw.txt
+#cp -v compute/Marioni/Output/SRR002324.mapped summarization/Marioni/Kidney2.gnumap.readsraw.txt
+#cp -v compute/Marioni/Output/SRR002325.mapped summarization/Marioni/Kidney3.gnumap.readsraw.txt
+#
+#cp -v compute/Marioni/SRR002320.tophat.geneCounts summarization/Marioni/Kidney1.tophatgene.readsraw.txt
+#cp -v compute/Marioni/SRR002321.tophat.geneCounts summarization/Marioni/Liver1.tophatgene.readsraw.txt
+#cp -v compute/Marioni/SRR002322.tophat.geneCounts summarization/Marioni/Liver2.tophatgene.readsraw.txt
+#cp -v compute/Marioni/SRR002323.tophat.geneCounts summarization/Marioni/Liver3.tophatgene.readsraw.txt
+#cp -v compute/Marioni/SRR002324.tophat.geneCounts summarization/Marioni/Kidney2.tophatgene.readsraw.txt
+#cp -v compute/Marioni/SRR002325.tophat.geneCounts summarization/Marioni/Kidney3.tophatgene.readsraw.txt
+#
+#cp -v compute/Marioni/SRR002320.tophat.psCounts summarization/Marioni/Kidney1.tophatpileup.readsraw.txt
+#cp -v compute/Marioni/SRR002321.tophat.psCounts summarization/Marioni/Liver1.tophatpileup.readsraw.txt
+#cp -v compute/Marioni/SRR002322.tophat.psCounts summarization/Marioni/Liver2.tophatpileup.readsraw.txt
+#cp -v compute/Marioni/SRR002323.tophat.psCounts summarization/Marioni/Liver3.tophatpileup.readsraw.txt
+#cp -v compute/Marioni/SRR002324.tophat.psCounts summarization/Marioni/Kidney2.tophatpileup.readsraw.txt
+#cp -v compute/Marioni/SRR002325.tophat.psCounts summarization/Marioni/Kidney3.tophatpileup.readsraw.txt
+
+#for x in gnumap tophatgene tophatpileup
+#do
+#  cp -v compute/Marioni/SRR002320.depth summarization/Marioni/Kidney1.$x.depth.txt
+#  cp -v compute/Marioni/SRR002321.depth summarization/Marioni/Liver1.$x.depth.txt
+#  cp -v compute/Marioni/SRR002322.depth summarization/Marioni/Liver2.$x.depth.txt
+#  cp -v compute/Marioni/SRR002323.depth summarization/Marioni/Liver3.$x.depth.txt
+#  cp -v compute/Marioni/SRR002324.depth summarization/Marioni/Kidney2.$x.depth.txt
+#  cp -v compute/Marioni/SRR002325.depth summarization/Marioni/Kidney3.$x.depth.txt
+#done
+
+#for f in summarization/Marioni/*tophatgene*readsraw.txt
+#do
+#  echo Converting to gene symbols for $f
+#  python code/MergeMatrixOnRowNames.py $f library/Ensembl_GRCh37.p10_GeneSymbols.txt $tmpFile1 False
+#  python code/FilterFile.py $tmpFile1 "len(x) > 2" 0 $tmpFile2
+#  python code/SelectColumns.py $tmpFile2 2,1 $tmpFile1
+#  python code/SummarizeDuplicateRowValues.py $tmpFile1 sum $f
+#done
+
+function summarizeAll {
+  aligner=$1
+  metaFile=$2
+  nnConv=$3
+  lnConv=$4
+  nbConv=$5
+  arraySuffix=$6
+
+  scripts/transformRnaSeqSummarized "summarization/Marioni/*${aligner}*" $metaFile $nnConv $lnConv $nbConv matrices/Marioni.$aligner.cqn2.txt
+
+  for dataType in readsraw reads rpkm rpkm2 probnn probln probnn2 probln2 probnb
+  do
+    scripts/buildMatrix "summarization/Marioni/Kidney*.$aligner.$dataType.txt" matrices/Marioni.Kidney.$aligner.$dataType.txt
+    scripts/buildMatrix "summarization/Marioni/Liver*.$aligner.$dataType.txt" matrices/Marioni.Liver.$aligner.$dataType.txt
+
+    python2 code/ReplaceText.py matrices/Marioni.Kidney.$aligner.$dataType.txt ".$aligner.$dataType.txt" " RNA-Seq" matrices/Marioni.Kidney.$aligner.$dataType.txt &
+    python2 code/ReplaceText.py matrices/Marioni.Liver.$aligner.$dataType.txt ".$aligner.$dataType.txt" " RNA-Seq" matrices/Marioni.Liver.$aligner.$dataType.txt &
+    wait
+  done
+
+  python2 code/TransformData.py matrices/Marioni.Kidney.$aligner.probnn.txt True barcode 2 matrices/Marioni.Kidney.$aligner.probnnb.txt &
+  python2 code/TransformData.py matrices/Marioni.Liver.$aligner.probnn.txt True barcode 2 matrices/Marioni.Liver.$aligner.probnnb.txt &
+  python2 code/TransformData.py matrices/Marioni.Kidney.$aligner.probln.txt True barcode 2 matrices/Marioni.Kidney.$aligner.problnb.txt &
+  python2 code/TransformData.py matrices/Marioni.Liver.$aligner.probln.txt True barcode 2 matrices/Marioni.Liver.$aligner.problnb.txt &
+  python2 code/TransformData.py matrices/Marioni.Kidney.$aligner.probnn2.txt True barcode 2 matrices/Marioni.Kidney.$aligner.probnn2b.txt &
+  python2 code/TransformData.py matrices/Marioni.Liver.$aligner.probnn2.txt True barcode 2 matrices/Marioni.Liver.$aligner.probnn2b.txt &
+  python2 code/TransformData.py matrices/Marioni.Kidney.$aligner.probln2.txt True barcode 2 matrices/Marioni.Kidney.$aligner.probln2b.txt &
+  python2 code/TransformData.py matrices/Marioni.Liver.$aligner.probln2.txt True barcode 2 matrices/Marioni.Liver.$aligner.probln2b.txt &
+  python2 code/TransformData.py matrices/Marioni.Kidney.$aligner.probnb.txt True barcode 2 matrices/Marioni.Kidney.$aligner.probnbb.txt &
+  python2 code/TransformData.py matrices/Marioni.Liver.$aligner.probnb.txt True barcode 2 matrices/Marioni.Liver.$aligner.probnbb.txt &
+  wait
+
+  for x in probnn probln probnn2 probln2 probnb
+  do
+    python2 code/MergeMatrixOnRowNames.py matrices/Marioni.Kidney.array.prob${arraySuffix}.txt matrices/Marioni.Liver.array.prob${arraySuffix}.txt matrices/Marioni.$aligner.${x}.txt
+    python2 code/MergeMatrixOnRowNames.py matrices/Marioni.$aligner.${x}.txt matrices/Marioni.Kidney.$aligner.${x}.txt matrices/Marioni.$aligner.${x}.txt
+    python2 code/MergeMatrixOnRowNames.py matrices/Marioni.$aligner.${x}.txt matrices/Marioni.Liver.$aligner.${x}.txt matrices/Marioni.$aligner.${x}.txt
+  done
+
+  python2 code/MergeMatrixOnRowNames.py matrices/Marioni.Kidney.$aligner.readsraw.txt matrices/Marioni.Liver.$aligner.readsraw.txt matrices/Marioni.$aligner.readsraw.txt
+  Rscript --vanilla code/CalculateCqn.R matrices/Marioni.$aligner.readsraw.txt $metaFile matrices/Marioni.$aligner.cqn.txt
+  python2 code/SelectColumns.py matrices/Marioni.$aligner.cqn.txt 0,1,2,3 matrices/Marioni.Kidney.$aligner.cqn.txt
+  python2 code/SelectColumns.py matrices/Marioni.$aligner.cqn.txt 0,4,5,6 matrices/Marioni.Liver.$aligner.cqn.txt
+  python2 code/SelectColumns.py matrices/Marioni.$aligner.cqn2.txt 0,1,2,3 matrices/Marioni.Kidney.$aligner.cqn2.txt
+  python2 code/SelectColumns.py matrices/Marioni.$aligner.cqn2.txt 0,4,5,6 matrices/Marioni.Liver.$aligner.cqn2.txt
+
+  for x in reads rpkm rpkm2 cqn cqn2
+  do
+    python2 code/MergeMatrixOnRowNames.py matrices/Marioni.Kidney.array.expr${arraySuffix}.txt matrices/Marioni.Liver.array.expr${arraySuffix}.txt matrices/Marioni.$aligner.${x}.txt
+    python2 code/MergeMatrixOnRowNames.py matrices/Marioni.$aligner.${x}.txt matrices/Marioni.Kidney.$aligner.${x}.txt matrices/Marioni.$aligner.${x}.txt
+    python2 code/MergeMatrixOnRowNames.py matrices/Marioni.$aligner.${x}.txt matrices/Marioni.Liver.$aligner.${x}.txt matrices/Marioni.$aligner.${x}.txt
+  done
+}
+
+#summarizeAll gnumap $u133Plus2MetaFile18 0.01 0.001 0.01 ""
+#summarizeAll tophatgene $geneSymbolMetaFile19 0.001 0.001 0.01 gene
+#summarizeAll tophatpileup $u133Plus2MetaFile19 0.001 0.001 0.01 ""
+
+source scripts/delete_temp_files

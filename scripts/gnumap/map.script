@@ -1,0 +1,42 @@
+#!/bin/bash
+
+#export OMP_NUM_THREADS=${ppn}
+
+outDescription=`basename $outPath`
+outLogFile=$outPath.out
+errLogFile=$outPath.err
+
+if [ -n "$PBS_O_WORKDIR" ]
+then
+  cd "$PBS_O_WORKDIR"
+fi
+
+rm -f ${outPath}*
+
+machfile=`pwd`/$outDescription.machines.uniq
+uniq $PBS_NODEFILE $machfile
+
+/usr/mpi/fsl_openmpi_gcc-1.4.2/bin/mpiexec -np ${nodes} -machinefile $machfile \
+  /fslgroup/fslg_genome/software/gnumap_MPI/bin/gnumap \
+    -g $genomeFastaFile \
+    -o $outPath \
+    -v 1 \
+    -c 1 \
+    --MPI_largemem \
+    ${otherParams} \
+    $fastQFile > >(tee $outLogFile) 2> >(tee $errLogFile >&2)
+
+rm $machfile
+
+if [ "$deleteFastQ" == "TRUE" ]
+then
+  rm $fastQFile
+fi
+
+for f in ${outPath}*.sam
+do
+  echo Zipping $f
+  gzip $f
+done
+
+exit 0

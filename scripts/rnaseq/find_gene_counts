@@ -1,0 +1,47 @@
+#!/bin/bash
+
+if [ -n "$PBS_O_WORKDIR" ]
+then
+  cd "$PBS_O_WORKDIR"
+else
+  dataDir=$1
+  id=$2
+  adapterSequence=$3
+  genomeFile=$4
+  metaFile=$5
+  outFile=$6
+fi
+
+echo Finding gene counts for $id
+
+source scripts/rnaseq/paths
+
+#currentDir=`pwd`
+#cd $dataDir
+#if [ -f $id.sra ]
+#then
+#  ~/RnaSeq/sra_to_fastq $id.sra
+#  rm $id.sra
+#fi
+#cd $currentDir
+
+##for fastqFile in $dataDir/$id*.fastq
+##do
+##  scripts/rnaseq/prepare_fastq $fastqFile $adapterSequence
+##done
+
+if [ -f $dataDir/${id}_2.fastq -o -f $dataDir/${id}_2.sam -o -f $dataDir/${id}_2.bam ]
+then
+  echo These are paired-end reads
+  echo Building SAM
+  scripts/rnaseq/build_sam_pe $dataDir $bwaDir/indices/hg19 $id $dataDir/${id}_1.fastq $dataDir/${id}_2.fastq
+
+  scripts/rnaseq/sam_count $dataDir/$id.sam $genomeFile $metaFile $dataDir/$id.pileups $dataDir/$id.gene &
+#  scripts/rnaseq/sam_count $dataDir/${id}_1.sam $genomeFile $metaFile $dataDir/${id}_1.pileups $dataDir/${id}_1.gene &
+#  scripts/rnaseq/sam_count $dataDir/${id}_2.sam $genomeFile $metaFile $dataDir/${id}_2.pileups $dataDir/${id}_2.gene &
+  wait
+else
+  echo These are single-end reads
+  scripts/rnaseq/build_sam_se $dataDir $bwaDir/indices/hg19 $id $dataDir/${id}_1.fastq
+  scripts/rnaseq/sam_count $dataDir/$id.sam $genomeFile $metaFile $dataDir/$id.pileups $dataDir/$id.gene
+fi

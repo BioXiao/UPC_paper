@@ -1,0 +1,10 @@
+#!/bin/bash
+
+inFile=$1
+
+/data/Software/sratoolkit.2.2.2a-centos_linux64/bin/fastq-dump --split-files $inFile
+
+#if [ ! -f ${inFile/.sra/_2.fastq} ]
+#then
+#  mv ${inFile/.sra/_1.fastq} ${inFile/.sra/.fastq}
+#fi

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+dataDir=$1
+genomeIndexDir=$2
+id=$3
+fastqFile=$4
+
+source scripts/rnaseq/paths
+
+currentDir=`pwd`
+cd $dataDir
+
+#$bwaDir/bwa aln -t 8 $genomeIndexDir $fastqFile > $id.sai
+#$bwaDir/bwa samse $genomeIndexDir $id.sai $fastqFile > $id.sam
+
+rm -f ${id}*.sai
+rm $fastqFile
+
+cd $currentDir

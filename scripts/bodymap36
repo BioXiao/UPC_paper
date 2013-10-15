@@ -1,0 +1,178 @@
+#!/bin/bash
+
+currentDir=`pwd`
+dataDir=compute/BodyMap
+genomeDir=Genomes/hg19
+genomeFile=$genomeDir/hg19.fa
+ucscCanonicalFile=library/UCSC_hg19_knownCanonical.txt
+ucscCanonicalMetaFile=library/UCSC_hg19_knownCanonical_Meta.txt
+ucscCanonicalNoSexChromMetaFile=library/UCSC_hg19_knownCanonical_Meta_NoSexChrom.txt
+
+mkdir -p $dataDir
+
+source scripts/rnaseq/paths
+source scripts/create_temp_files
+
+#tail -n +2 $ucscCanonicalFile > $tmpFile1
+#python2 code/SelectColumns.py $tmpFile1 4,0,1,2 $tmpFile2
+#python2 code/AddLengthGCToMeta.py $tmpFile2 ~/genomes/hg19 $ucscCanonicalMetaFile
+#python2 code/FilterFile.py $ucscCanonicalMetaFile "x[1] not in ['chrX', 'chrY']" 0 $ucscCanonicalNoSexChromMetaFile
+
+##$bwaDir/bwa index -p $bwaDir/indices/hg19 $genomeFile
+##$samToolsDir/samtools faidx $genomeFile
+
+#seq 872 887 | parallel --max-procs 16 scripts/rnaseq/process_tophat_from_sra http://ftp-private.ncbi.nlm.nih.gov/sra/sra-instant/reads/ByRun/sra/ERR/ERR030/ERR030{}/ERR030{}.sra $dataDir "'--num-threads 16 --no-coverage-search --mate-inner-dist 110'" "''"
+#seq 888 903 | parallel --max-procs 16 scripts/rnaseq/process_tophat_from_sra http://ftp-private.ncbi.nlm.nih.gov/sra/sra-instant/reads/ByRun/sra/ERR/ERR030/ERR030{}/ERR030{}.sra $dataDir "'--num-threads 16 --no-coverage-search'" "''"
+
+#for i in {872..887}
+#do
+#  bamFile=$dataDir/ERR030${i}.tophat.bam
+#  Rscript --vanilla code/CalculateRnaSeqReadCounts.R $bamFile 50 ${bamFile/\.bam/.geneCounts}
+#done
+#
+#for i in {888..903}
+#do
+#  bamFile=$dataDir/ERR030${i}.tophat.bam
+#  Rscript --vanilla code/CalculateRnaSeqReadCounts.R $bamFile 75 ${bamFile/\.bam/.geneCounts}
+#done
+
+#seq 872 903 | parallel --max-procs 16 scripts/rnaseq/htseq_gene_count $dataDir/ERR030{}.tophat.bam no $dataDir/ERR030{}.tophat.geneCounts
+#seq 872 903 | parallel --max-procs 16 scripts/rnaseq/pileup_count $dataDir/ERR030{}.tophat.bam $genomeFastaFile $ucscCanonicalNoSexChromMetaFile $dataDir/ERR030{}.tophat.pileupCounts
+
+##  scripts/rnaseq/find_gene_counts $dataDir $id ATCTCGTATGCCGTCTTCTGCTTG $genomeFile $ucscCanonicalNoSexChromMetaFile $id.geneCounts
+##  qsub scripts/rnaseq/find_gene_counts -l nodes=1:ppn=1,pmem=4gb,walltime=4:00:00 -N find_gene_counts -q batch -v dataDir=$dataDir,id=$id,adapterSequence=ATCTCGTATGCCGTCTTCTGCTTG,genomeFile=$genomeFile,metaFile=$ucscCanonicalNoSexChromMetaFile,outFile=$id.geneCounts
+
+#rm -rf summarization/BodyMap
+#mkdir -p summarization/BodyMap/ASingle
+#mkdir -p summarization/BodyMap/APaired
+#mkdir -p summarization/BodyMap/BSingle
+
+function combinePaired {
+  id=$1
+  outFile=$2
+
+  cat $dataDir/${id}_1.gene $dataDir/${id}_2.gene > $tmpFile1
+  python2 code/SummarizeDuplicateRowValues.py $tmpFile1 sum $outFile
+}
+
+#cp $dataDir/ERR030872.gene summarization/BodyMap/ASingle/Thyroid_BodyMap_AS.readsraw.txt
+#combinePaired ERR030872 summarization/BodyMap/APaired/Thyroid_BodyMap_AP.readsraw.txt
+#cp $dataDir/ERR030873.gene summarization/BodyMap/ASingle/Testes_BodyMap_AS.readsraw.txt
+#combinePaired ERR030873 summarization/BodyMap/APaired/Testes_BodyMap_AP.readsraw.txt
+#cp $dataDir/ERR030874.gene summarization/BodyMap/ASingle/Ovary_BodyMap_AS.readsraw.txt
+#combinePaired ERR030874 summarization/BodyMap/APaired/Ovary_BodyMap_AP.readsraw.txt
+#cp $dataDir/ERR030875.gene summarization/BodyMap/ASingle/WBC_BodyMap_AS.readsraw.txt
+#combinePaired ERR030875 summarization/BodyMap/APaired/WBC_BodyMap_AP.readsraw.txt
+#cp $dataDir/ERR030876.gene summarization/BodyMap/ASingle/Skeletal_BodyMap_AS.readsraw.txt
+#combinePaired ERR030876 summarization/BodyMap/APaired/Skeletal_BodyMap_AP.readsraw.txt
+#cp $dataDir/ERR030877.gene summarization/BodyMap/ASingle/Prostate_BodyMap_AS.readsraw.txt
+#combinePaired ERR030877 summarization/BodyMap/APaired/Prostate_BodyMap_AP.readsraw.txt
+#cp $dataDir/ERR030878.gene summarization/BodyMap/ASingle/Lymph_BodyMap_AS.readsraw.txt
+#combinePaired ERR030878 summarization/BodyMap/APaired/Lymph_BodyMap_AP.readsraw.txt
+#cp $dataDir/ERR030879.gene summarization/BodyMap/ASingle/Lung_BodyMap_AS.readsraw.txt
+#combinePaired ERR030879 summarization/BodyMap/APaired/Lung_BodyMap_AP.readsraw.txt
+#cp $dataDir/ERR030880.gene summarization/BodyMap/ASingle/Adipose_BodyMap_AS.readsraw.txt
+#combinePaired ERR030880 summarization/BodyMap/APaired/Adipose_BodyMap_AP.readsraw.txt
+#cp $dataDir/ERR030881.gene summarization/BodyMap/ASingle/Adrenal_BodyMap_AS.readsraw.txt
+#combinePaired ERR030881 summarization/BodyMap/APaired/Adrenal_BodyMap_AP.readsraw.txt
+#cp $dataDir/ERR030882.gene summarization/BodyMap/ASingle/Brain_BodyMap_AS.readsraw.txt
+#combinePaired ERR030882 summarization/BodyMap/APaired/Brain_BodyMap_AP.readsraw.txt
+#cp $dataDir/ERR030883.gene summarization/BodyMap/ASingle/Breast_BodyMap_AS.readsraw.txt
+#combinePaired ERR030883 summarization/BodyMap/APaired/Breast_BodyMap_AP.readsraw.txt
+#cp $dataDir/ERR030884.gene summarization/BodyMap/ASingle/Colon_BodyMap_AS.readsraw.txt
+#combinePaired ERR030884 summarization/BodyMap/APaired/Colon_BodyMap_AP.readsraw.txt
+#cp $dataDir/ERR030885.gene summarization/BodyMap/ASingle/Kidney_BodyMap_AS.readsraw.txt
+#combinePaired ERR030885 summarization/BodyMap/APaired/Kidney_BodyMap_AP.readsraw.txt
+#cp $dataDir/ERR030886.gene summarization/BodyMap/ASingle/Heart_BodyMap_AS.readsraw.txt
+#combinePaired ERR030886 summarization/BodyMap/APaired/Heart_BodyMap_AP.readsraw.txt
+#cp $dataDir/ERR030887.gene summarization/BodyMap/ASingle/Liver_BodyMap_AS.readsraw.txt
+#combinePaired ERR030887 summarization/BodyMap/APaired/Liver_BodyMap_AP.readsraw.txt
+
+#cp -v $dataDir/ERR030888.gene summarization/BodyMap/BSingle/Adipose_BodyMap_BS.readsraw.txt
+#cp -v $dataDir/ERR030889.gene summarization/BodyMap/BSingle/Adrenal_BodyMap_BS.readsraw.txt
+#cp -v $dataDir/ERR030890.gene summarization/BodyMap/BSingle/Brain_BodyMap_BS.readsraw.txt
+#cp -v $dataDir/ERR030891.gene summarization/BodyMap/BSingle/Breast_BodyMap_BS.readsraw.txt
+#cp -v $dataDir/ERR030892.gene summarization/BodyMap/BSingle/Colon_BodyMap_BS.readsraw.txt
+#cp -v $dataDir/ERR030893.gene summarization/BodyMap/BSingle/Kidney_BodyMap_BS.readsraw.txt
+#cp -v $dataDir/ERR030894.gene summarization/BodyMap/BSingle/Heart_BodyMap_BS.readsraw.txt
+#cp -v $dataDir/ERR030895.gene summarization/BodyMap/BSingle/Liver_BodyMap_BS.readsraw.txt
+#cp -v $dataDir/ERR030896.gene summarization/BodyMap/BSingle/Lung_BodyMap_BS.readsraw.txt
+#cp -v $dataDir/ERR030897.gene summarization/BodyMap/BSingle/Lymph_BodyMap_BS.readsraw.txt
+#cp -v $dataDir/ERR030898.gene summarization/BodyMap/BSingle/Prostate_BodyMap_BS.readsraw.txt
+#cp -v $dataDir/ERR030899.gene summarization/BodyMap/BSingle/Skeletal_BodyMap_BS.readsraw.txt
+#cp -v $dataDir/ERR030900.gene summarization/BodyMap/BSingle/WBC_BodyMap_BS.readsraw.txt
+#cp -v $dataDir/ERR030901.gene summarization/BodyMap/BSingle/Ovary_BodyMap_BS.readsraw.txt
+#cp -v $dataDir/ERR030902.gene summarization/BodyMap/BSingle/Testes_BodyMap_BS.readsraw.txt
+#cp -v $dataDir/ERR030903.gene summarization/BodyMap/BSingle/Thyroid_BodyMap_BS.readsraw.txt
+
+#for x in ASingle APaired BSingle
+#do
+#  scripts/transformRnaSeqSummarized "summarization/BodyMap/$x/*" $ucscCanonicalNoSexChromMetaFile nn .probnn.txt 0.05 FALSE
+#  scripts/transformRnaSeqSummarized "summarization/BodyMap/$x/*" $ucscCanonicalNoSexChromMetaFile ln .probln.txt 0.05 FALSE
+#
+#  for dataType in readsraw reads rpkm probnn probln
+#  do
+#    scripts/buildMatrix "summarization/BodyMap/$x/*.$dataType.txt" matrices/BodyMap.$x.$dataType.txt
+#    python2 code/ReplaceText.py matrices/BodyMap.$x.$dataType.txt .$dataType.txt "" matrices/BodyMap.$x.$dataType.txt
+#  done
+#
+#  Rscript --vanilla code/CalculateCqn.R matrices/BodyMap.$x.readsraw.txt $ucscCanonicalNoSexChromMetaFile matrices/BodyMap.$x.cqn.txt
+#  python2 code/ReplaceText.py matrices/BodyMap.$x.cqn.txt .readsraw.txt "" matrices/BodyMap.$x.cqn.txt
+#done
+
+function buildPredictDataFile {
+  dataFile1=$1
+  dataFile2=$2
+  dataFile3=$3
+  outFile=$4
+
+  python2 code/MergeMatrixOnRowNames.py $dataFile1 $dataFile2 $tmpFile1
+  python2 code/MergeMatrixOnRowNames.py $tmpFile1 $dataFile3 $tmpFile2
+  head -1 $tmpFile2 > $tmpFile3
+  python2 code/ReplaceText.py $tmpFile3 _BodyMap_AS "" $tmpFile4
+  python2 code/ReplaceText.py $tmpFile4 _BodyMap_AP "" $tmpFile3
+  python2 code/ReplaceText.py $tmpFile3 _BodyMap_BS "" $tmpFile4
+  python2 code/ReplaceText.py $tmpFile4 _Wang "" $tmpFile3
+  python2 code/ReplaceText.py $tmpFile3 Brain2 Brain $tmpFile4
+  python2 code/InsertColumnViaExpression.py $tmpFile4 "'Class'" $tmpFile3
+  python2 code/SelectColumns.py $tmpFile3 49,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48 $tmpFile4
+  cat $tmpFile2 $tmpFile4 > $tmpFile3
+  python2 code/SelectColumns.py $tmpFile3 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,38,39,41,42,45,47 $tmpFile4
+  cp $tmpFile4 $outFile
+}
+
+mlflexDir=compute/ML-Flex-UPC
+
+for dataType in reads probnn rpkm cqn
+do
+  data1=BodyMap.ASingle
+  data2=BodyMap.BSingle
+  data3=Wang
+  dataFile1=matrices/$data1.$dataType.txt
+  dataFile2=matrices/$data2.$dataType.txt
+  dataFile3=matrices/$data3.$dataType.txt
+  dataFile=$mlflexDir/InputData/$data1.$data2.$data3.$dataType.txt
+#  buildPredictDataFile $dataFile1 $dataFile2 $dataFile3 $dataFile
+
+#  #for templateFile in BodyMapTemplate.txt BodyMapTemplate4.txt BodyMapTemplate5.txt BodyMapTemplate6.txt
+#  for templateFile in BodyMapTemplate4.txt
+#  do
+#    expFile=$mlflexDir/Experiments/BodyMap_$dataType
+#    expFile=${expFile/BodyMapTemplate/BodyMapTemplate_$dataType}
+#    runFile=$mlflexDir/run_${dataType}
+#
+#    python2 code/ReplaceText.py $mlflexDir/Experiments/$templateFile "%%inputFile%%" "$dataFile" $expFile
+#    python2 code/ReplaceText.py $mlflexDir/run "%%experimentFile%%" "$expFile" $runFile
+#    chmod 777 $runFile
+#  done
+done
+
+#currentDir=`pwd`
+#cd $mlflexDir
+#for runFile in run_*
+#do
+#  ./$runFile
+#done
+#cd $currentDir
+
+source scripts/delete_temp_files

@@ -1,0 +1,26 @@
+#!/bin/bash
+
+bamFile=$1
+stranded=$2 #yes, no, or reverse
+outFile=$3
+
+source scripts/rnaseq/paths
+source scripts/create_temp_files
+
+if [ -f $outFile ]
+then
+  echo $outFile already exists, so exiting
+  exit
+fi
+
+bamFileTemp=${bamFile/\.bam/_tmp}
+samFile=${bamFile/\.bam/.sam}
+tmpOutFile=${bamFile/\.bam/.out}
+
+$samToolsDir/samtools sort -n -m 5000000000 $bamFile $bamFileTemp
+$samToolsDir/samtools view -h $bamFileTemp.bam > $samFile
+htseq-count -m union -s $stranded -t exon -i gene_id -q $samFile $gtfFile > $tmpOutFile
+head -n -5 $tmpOutFile > $outFile
+
+rm -fv $bamFileTemp.bam $samFile $tmpOutFile
+source scripts/delete_temp_files

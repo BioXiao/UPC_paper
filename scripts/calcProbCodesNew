@@ -1,0 +1,18 @@
+#!/bin/bash
+
+exprFile=$1
+metaFile=$2
+transformType=$3
+conv=$4
+outFile=$5
+
+tmpFile1=`mktemp`
+tmpFile2=`mktemp`
+
+echo Calculating prob codes for $exprFile
+python2 code/SelectColumns.py $metaFile 0,4,5 $tmpFile1
+python2 code/InnerJoin.py $exprFile $tmpFile1 0 0 $tmpFile2 True
+
+Rscript --vanilla code/CalculateProbCodes-3.R $tmpFile2 $transformType $outFile $conv
+
+rm -f $tmpFile1 $tmpFile2

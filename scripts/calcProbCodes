@@ -1,0 +1,42 @@
+#!/bin/bash
+
+exprFile=$1
+metaFile=$2
+transformType=$3
+conv=$4
+removeZeroes=$5
+outFile=$6
+
+tmpFile1=`mktemp`
+tmpFile2=`mktemp`
+tmpFile3=`mktemp`
+tmpFile4=`mktemp`
+tmpFile5=`mktemp`
+
+if [ "$removeZeroes" == "TRUE" ]
+then
+  python2 code/FilterFile.py $exprFile "float(x[1]) == 0.0" 0 $tmpFile1
+  python2 code/FilterFile.py $exprFile "float(x[1]) > 0.0" 0 $tmpFile2
+else
+  cp $exprFile $tmpFile2
+fi
+
+echo Calculating prob codes for $exprFile
+python2 code/SelectColumns.py $metaFile 0,4,5 $tmpFile3
+python2 code/InnerJoin.py $tmpFile2 $tmpFile3 0 0 $tmpFile4 True
+
+Rscript --vanilla code/CalculateProbCodes-2.R $tmpFile4 $transformType $tmpFile5 $conv
+Rscript --vanilla code/CalculateProbCodes-4.R $tmpFile4 $transformType $tmpFile5 $conv
+
+if [ "$removeZeroes" == "TRUE" ]
+then
+  cat $tmpFile1 $tmpFile5 > $outFile
+else
+  outLines=`python2 code/PrintNumLines.py $tmpFile5`
+  if [ "$outLines" -gt 0 ]
+  then
+    cp $tmpFile5 $outFile
+  fi
+fi
+
+rm -f $tmpFile1 $tmpFile2 $tmpFile3 $tmpFile4 $tmpFile5

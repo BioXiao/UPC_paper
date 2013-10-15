@@ -1,0 +1,126 @@
+#!/bin/bash
+
+currentDir=`pwd`
+dataDir=compute/BodyMap100
+summDir=summarization/BodyMap100
+genomeDir=Genomes/hg19
+genomeFile=$genomeDir/hg19.fa
+ucscCanonicalFile=library/UCSC_hg19_knownCanonical.txt
+ucscCanonicalMetaFile=library/UCSC_hg19_knownCanonical_Meta.txt
+ucscCanonicalNoSexChromMetaFile=library/UCSC_hg19_knownCanonical_Meta_NoSexChrom.txt
+ensemblMetaFile=library/Ensembl_CRCh37_Gene_Meta.txt
+ensemblSymbolMetaFile=library/Ensembl_CRCh37_GeneSymbol_Meta.txt
+
+mkdir -p $dataDir
+mkdir -p $summDir
+
+source scripts/rnaseq/paths
+source /data/Scripts/create_temp_files
+
+#currentDir=`pwd`
+#cd $dataDir
+#for i in {856..871}
+#do
+#  wget http://ftp-private.ncbi.nlm.nih.gov/sra/sra-instant/reads/ByRun/sra/ERR/ERR030/ERR030${i}/ERR030${i}.sra &
+#done
+#wait
+
+#for f in *.sra
+#do
+#  ~/Pipeline/scripts/sra_to_fastq $f &
+#done
+#wait
+#rm *.sra
+#cd $currentDir
+
+#for f in $dataDir/*.fastq
+#do
+#  mv -v $f ${f/_1\.fastq/_100.fastq}
+#done
+
+#for f in $dataDir/*_100.fastq
+#do
+#  python2 ~/Pipeline/code/TrimFastQSequences.py $f 32 ${f/_100\.fastq/_32.fastq} &
+#done
+#wait
+
+#for f in $dataDir/*_32.fastq
+#do
+#  scripts/rnaseq/process_tophat $f "--num-threads 16 --no-coverage-search --library-type fr-firststrand" ${f/\.fastq/} ${f/\.fastq/.tophat.bam} &
+#done
+#wait
+#rm -fv $dataDir/*_32.fastq
+
+#for f in $dataDir/*_100.fastq
+#do
+#  scripts/rnaseq/process_tophat $f "--num-threads 16 --no-coverage-search --library-type fr-firststrand" ${f/\.fastq/} ${f/\.fastq/.tophat.bam} &
+#done
+#wait
+#rm -fv $dataDir/*_100.fastq
+
+#for f in $dataDir/*.bam
+#do
+#  $samToolsDir/samtools view -c -F 4 $f > ${f/\.tophat\.bam/.depth} &
+#done
+#wait
+
+#for f in $dataDir/*_32.tophat.bam
+#do
+#  scripts/rnaseq/htseq_gene_count $f yes ${f/\.bam/.geneCounts} &
+#done
+#wait
+
+#for f in $dataDir/*_100.tophat.bam
+#do
+#  scripts/rnaseq/htseq_gene_count $f yes ${f/\.bam/.geneCounts} &
+#done
+#wait
+
+## Trim chr from chromosome name
+##python2 code/InsertColumnViaExpression.py $ucscCanonicalNoSexChromMetaFile "x[1].replace('chr', '')" $tmpFile1
+##python2 code/SelectColumns.py $tmpFile1 0,-1,2,3,4,5 $tmpFile2
+##for x in 32 100
+##do
+##  scripts/rnaseq/pileup_count $dataDir/ERR030856_${x}.tophat.bam $genomeFastaFile $tmpFile2 $dataDir/ERR030856_${x}.tophat.pileupCounts
+###  scripts/rnaseq/pileup_count $dataDir/ERR030856_${x}.tophat.bam $genomeFastaFile $ucscCanonicalNoSexChromMetaFile $dataDir/ERR030856_${x}.tophat.pileupCounts &
+##break
+##done
+##wait
+
+#rm -fv $summDir/*
+#for f in $dataDir/*geneCounts
+#do
+#  echo Converting to gene symbols for $f
+#  outF=`basename $f`
+#  outF=${outF/tophat\.geneCounts/tophatgene.readsraw.txt}
+#
+#  python code/MergeMatrixOnRowNames.py $f library/Ensembl_GRCh37.p10_GeneSymbols.txt $tmpFile1 False
+#  python code/FilterFile.py $tmpFile1 "len(x) > 2" 0 $tmpFile2
+#  python code/SelectColumns.py $tmpFile2 2,1 $tmpFile1
+#  python code/SummarizeDuplicateRowValues.py $tmpFile1 sum $summDir/$outF
+#done
+
+#for x in tophatgene
+#do
+#  for f in $dataDir/*depth
+#  do
+#    outF=`basename $f`
+#    outF=${outF/\.depth/}
+#    outF=$summDir/$outF.$x.depth.txt
+#    cp -v $f $outF
+#  done
+#done
+
+#for x in 32 100
+#do
+#  scripts/transformRnaSeqSummarized "$summDir/*_${x}.tophatgene*" $ensemblSymbolMetaFile 0.001 0.001 0.01 matrices/BodyMap_${x}.tophatgene.cqn2.txt
+#
+#  for dataType in readsraw reads rpkm rpkm2 probnn probln probnb
+#  do
+#    scripts/buildMatrix "$summDir/*_${x}.tophatgene.$dataType.txt" matrices/BodyMap_${x}.tophatgene.$dataType.txt
+#  done
+#
+#  Rscript --vanilla code/CalculateCqn.R matrices/BodyMap_${x}.tophatgene.readsraw.txt $ensemblSymbolMetaFile matrices/BodyMap_${x}.tophatgene.cqn.txt
+#done
+
+source scripts/delete_temp_files

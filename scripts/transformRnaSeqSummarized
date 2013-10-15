@@ -1,0 +1,72 @@
+#!/bin/bash
+
+inFilePattern="$1"
+metaFile="$2"
+nnConv=$3
+lnConv=$4
+nbConv=$5
+outCqnFile=$6
+
+source scripts/create_temp_files
+
+function calcProbCodes {
+  f=$1
+
+  echo Transforming RNA-Seq values for $f
+  python2 code/CalculateRPKM.py $f $metaFile $f.tmp1
+  python2 code/TransformData.py $f.tmp1 False add1 2 $f.tmp2
+  python2 code/TransformData.py $f.tmp2 False log2 2 ${f/\.readsraw\.txt/.rpkm.txt}
+
+  python2 code/CalculateRPKM2.py $f ${f/readsraw/depth} $metaFile $f.tmp1
+  python2 code/TransformData.py $f.tmp1 False add1 2 $f.tmp2
+  python2 code/TransformData.py $f.tmp2 False log2 2 ${f/\.readsraw\.txt/.rpkm2.txt}
+
+  python2 code/SelectColumns.py $metaFile 0,4,5 $f.tmp3
+  python2 code/InnerJoin.py $f $f.tmp3 0 0 $f.tmp4 True
+
+  outProbNN=${f/\.readsraw\.txt/.probnn.txt}
+  outProbLN=${f/\.readsraw\.txt/.probln.txt}
+  outProbNN2=${f/\.readsraw\.txt/.probnn2.txt}
+  outProbLN2=${f/\.readsraw\.txt/.probln2.txt}
+  outProbNB=${f/\.readsraw\.txt/.probnb.txt}
+
+  if [ ! -f $outProbNN ]
+  then
+    Rscript --vanilla code/CalculateProbCodes-2.R $f.tmp4 nn $outProbNN $nnConv &
+  fi
+  if [ ! -f $outProbLN ]
+  then
+    Rscript --vanilla code/CalculateProbCodes-2.R $f.tmp4 ln $outProbLN $lnConv &
+  fi
+  if [ ! -f $outProbNN2 ]
+  then
+    Rscript --vanilla code/CalculateProbCodes-4.R $f.tmp4 nn $outProbNN2 $nnConv &
+  fi
+  if [ ! -f $outProbLN2 ]
+  then
+    Rscript --vanilla code/CalculateProbCodes-4.R $f.tmp4 ln $outProbLN2 $lnConv &
+  fi
+  if [ ! -f $outProbNB ]
+  then
+    Rscript --vanilla code/CalculateProbCodes-4.R $f.tmp4 nb $outProbNB $nbConv &
+  fi
+
+  wait
+
+  python2 code/TransformData.py $f False add1 2 $f.tmp1
+  python2 code/TransformData.py $f.tmp1 False log2 2 ${f/\.readsraw\.txt/.reads.txt}
+
+  rm -f $f.tmp*
+}
+
+for f in ${inFilePattern}*.readsraw.txt
+do
+  calcProbCodes $f &
+done
+wait
+
+scripts/buildMatrix "${inFilePattern}*.readsraw.txt" $tmpFile1
+cat ${inFilePattern}*.depth.txt > $tmpFile2
+Rscript --vanilla code/CalculateCqn2.R $tmpFile1 $tmpFile2 $metaFile $outCqnFile
+
+source scripts/delete_temp_files

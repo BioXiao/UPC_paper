@@ -1,0 +1,19 @@
+#!/bin/bash
+
+fastqFilePattern="$1"
+parameters="$2"
+tmpDir=$3
+outBamFile=$4
+
+source scripts/rnaseq/paths
+
+acceptedBamFile=$tmpDir/accepted_hits.bam
+
+if [ -f $outBamFile ]
+then
+  echo $outBamFile already exists
+else
+  $tophatDir/tophat2 $parameters -o $tmpDir -G $gtfFile $genomeIndexPath $fastqFilePattern
+  $samToolsDir/samtools sort $acceptedBamFile ${outBamFile/\.bam/}
+  $samToolsDir/samtools index $outBamFile
+fi

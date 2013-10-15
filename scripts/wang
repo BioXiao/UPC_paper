@@ -1,0 +1,119 @@
+#!/bin/bash
+
+currentDir=`pwd`
+dataDir=compute/Wang
+summDir=summarization/Wang
+genomeDir=Genomes/hg19
+genomeFile=$genomeDir/hg19.fa
+ucscCanonicalFile=library/UCSC_hg19_knownCanonical.txt
+ucscCanonicalMetaFile=library/UCSC_hg19_knownCanonical_Meta.txt
+ucscCanonicalNoSexChromMetaFile=library/UCSC_hg19_knownCanonical_Meta_NoSexChrom.txt
+ensemblMetaFile=library/Ensembl_CRCh37_Gene_Meta.txt
+ensemblSymbolMetaFile=library/Ensembl_CRCh37_GeneSymbol_Meta.txt
+
+source scripts/create_temp_files
+source scripts/rnaseq/paths
+
+#seq 256 348 | parallel --max-procs 30 -v scripts/rnaseq/process_tophat_from_sra http://ftp-private.ncbi.nlm.nih.gov/sra/sra-instant/reads/ByRun/sra/SRR/SRR015/SRR015{}/SRR015{}.sra $dataDir "'--num-threads 16 --no-coverage-search'" "''"
+
+##seq 256 348 | parallel --max-procs 30 -v python2 code/CalculateRnaSeqReadCounts.R $dataDir/SRR015{}.tophat.bam 32 $dataDir/SRR015{}.tophat.geneCounts
+#seq 256 348 | parallel --max-procs 30 -v scripts/rnaseq/htseq_gene_count $dataDir/SRR015{}.tophat.bam no $dataDir/SRR015{}.tophat.geneCounts
+#seq 256 348 | parallel --max-procs 20 -v scripts/rnaseq/pileup_count $dataDir/SRR015{}.tophat.bam $genomeFastaFile $ucscCanonicalNoSexChromMetaFile $dataDir/SRR015{}.tophat.pileupCounts
+
+#for f in $dataDir/*.bam
+#do
+#  echo $f
+#  $samToolsDir/samtools view -c -F 4 $f > ${f/\.tophat\.bam/.depth}
+#done
+
+#for i in {256..348}
+#do
+#  id=SRR015${i}
+#
+#  qsub scripts/rnaseq/find_gene_counts -l nodes=1:ppn=1,pmem=4gb,walltime=4:00:00 -N find_gene_counts -q batch -v dataDir=$dataDir,id=$id,adapterSequence=ATCTCGTATGCCGTCTTCTGCTTG,genomeFile=$genomeFile,metaFile=$ucscCanonicalNoSexChromMetaFile,outFile=$id.geneCounts
+#done
+
+function combine {
+  ids="$1"
+  inFileSuffix=$2
+  outFile=$3
+  outDepthFile=$4
+
+  echo Combining $ids
+  tmpFileA=`mktemp`
+  tmpFileB=`mktemp`
+
+  for id in $ids
+  do
+    cat $dataDir/SRR015${id}${inFileSuffix} >> $tmpFileA
+    cat $dataDir/SRR015${id}.depth >> $tmpFileB
+  done
+
+  python2 code/SummarizeDuplicateRowValues.py $tmpFileA sum $outFile
+  python2 code/PrintColumnSum.py $tmpFileB 0 > $outDepthFile
+
+  rm $tmpFileA $tmpFileB
+}
+
+function combineAll {
+  inFileSuffix=$1
+  aligner=$2
+
+  combine "256 257 258 259 260 261 262" $inFileSuffix $summDir/Brain_Wang.$aligner.readsraw.txt $summDir/Brain_Wang.$aligner.depth.txt
+  combine "263 264 265 267 268 269" $inFileSuffix $summDir/HME_Wang.$aligner.readsraw.txt $summDir/HME_Wang.$aligner.depth.txt
+  combine "270 271 272 273" $inFileSuffix $summDir/Breast_Wang.$aligner.readsraw.txt $summDir/Breast_Wang.$aligner.depth.txt
+  combine "274 275 276 277" $inFileSuffix $summDir/MCF7_Wang.$aligner.readsraw.txt $summDir/MCF7_Wang.$aligner.depth.txt
+  combine "278 279 280 281" $inFileSuffix $summDir/MB435_Wang.$aligner.readsraw.txt $summDir/MB435_Wang.$aligner.depth.txt
+  combine "282 283 284 285" $inFileSuffix $summDir/T47D_Wang.$aligner.readsraw.txt $summDir/T47D_Wang.$aligner.depth.txt
+  combine "286 287 288 289" $inFileSuffix $summDir/Brain2_Wang.$aligner.readsraw.txt $summDir/Brain2_Wang.$aligner.depth.txt
+  combine "290 291 292" $inFileSuffix $summDir/UHR_Wang.$aligner.readsraw.txt $summDir/UHR_Wang.$aligner.depth.txt
+  combine "293 294 295 296 297 298 299" $inFileSuffix $summDir/Liver_Wang.$aligner.readsraw.txt $summDir/Liver_Wang.$aligner.depth.txt
+  combine "300 301 302 303 304 305 306" $inFileSuffix $summDir/Heart_Wang.$aligner.readsraw.txt $summDir/Heart_Wang.$aligner.depth.txt
+  combine "307 308 309 310 311 312 313" $inFileSuffix $summDir/Skeletal_Wang.$aligner.readsraw.txt $summDir/Skeletal_Wang.$aligner.depth.txt
+  combine "314 315 316 317 318 319 320" $inFileSuffix $summDir/Colon_Wang.$aligner.readsraw.txt $summDir/Colon_Wang.$aligner.depth.txt
+  combine "321 322 323 324 325 326 327" $inFileSuffix $summDir/Adipose_Wang.$aligner.readsraw.txt $summDir/Adipose_Wang.$aligner.depth.txt
+  combine "328 329 330 331 332 333 334" $inFileSuffix $summDir/Testes_Wang.$aligner.readsraw.txt $summDir/Testes_Wang.$aligner.depth.txt
+  combine "335 336 337 338 339 340 341" $inFileSuffix $summDir/Lymph_Wang.$aligner.readsraw.txt $summDir/Lymph_Wang.$aligner.depth.txt
+  combine "342 343 344 345 346 347 348" $inFileSuffix $summDir/BT474_Wang.$aligner.readsraw.txt $summDir/BT474_Wang.$aligner.depth.txt
+}
+
+#mkdir -p $summDir
+#rm -fv $summDir/*
+
+#combineAll .gene gnumap
+#combineAll .tophat.geneCounts tophatgene
+#combineAll .tophat.pileupCounts tophatpileup
+
+#for f in $summDir/*tophatgene*readsraw.txt
+#do
+#  echo Converting to gene symbols for $f
+#  python code/MergeMatrixOnRowNames.py $f library/Ensembl_GRCh37.p10_GeneSymbols.txt $tmpFile1 False
+#  python code/FilterFile.py $tmpFile1 "len(x) > 2" 0 $tmpFile2
+#  python code/SelectColumns.py $tmpFile2 2,1 $tmpFile1
+#  python code/SummarizeDuplicateRowValues.py $tmpFile1 sum $f
+#done
+
+#scripts/transformRnaSeqSummarized "$summDir/*gnumap*" $ucscCanonicalNoSexChromMetaFile 0.001 0.001 0.01 matrices/Wang.gnumap.cqn2.txt
+#scripts/transformRnaSeqSummarized "$summDir/*tophatgene*" $ensemblSymbolMetaFile 0.001 0.001 0.01 matrices/Wang.tophatgene.cqn2.txt
+#scripts/transformRnaSeqSummarized "$summDir/*tophatpileup*" $ucscCanonicalNoSexChromMetaFile 0.001 0.001 0.01 matrices/Wang.tophatpileup.cqn2.txt
+
+function matricize {
+  aligner=$1
+  metaFile=$2
+
+  for dataType in readsraw rpkm rpkm2 probnn probln probnb
+  do
+    scripts/buildMatrix "$summDir/*${aligner}.$dataType.txt" matrices/Wang.$aligner.$dataType.txt
+    python2 code/ReplaceText.py matrices/Wang.$aligner.$dataType.txt .$dataType.txt "" matrices/Wang.$aligner.$dataType.txt
+  done
+
+#  Rscript --vanilla code/CalculateCqn.R matrices/Wang.$aligner.readsraw.txt $metaFile matrices/Wang.$aligner.cqn.txt
+  python2 code/ReplaceText.py matrices/Wang.$aligner.cqn.txt .readsraw.txt "" matrices/Wang.$aligner.cqn.txt
+  python2 code/ReplaceText.py matrices/Wang.$aligner.cqn2.txt .readsraw.txt "" matrices/Wang.$aligner.cqn2.txt
+}
+
+#matricize gnumap $ucscCanonicalNoSexChromMetaFile
+#matricize tophatgene $ensemblSymbolMetaFile
+#matricize tophatpileup $ucscCanonicalNoSexChromMetaFile
+
+source scripts/delete_temp_files

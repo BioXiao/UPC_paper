@@ -1,0 +1,43 @@
+#!/bin/bash
+
+bamFile=$1
+genomeFile=$2
+metaFile=$3
+geneFile=$4
+
+source scripts/rnaseq/paths
+source scripts/create_temp_files
+
+pileupFile=${bamFile/\.bam/.pileup}
+tmpFile=${bamFile/\.bam/.tmp}
+mappedFile=${bamFile/\.bam/.mapped}
+
+head $metaFile > $tmpFile1
+
+while read line
+do
+#  echo $line
+  name=$(echo $line | cut -d' ' -f1)
+  chromosome=$(echo $line | cut -d' ' -f2)
+  start=$(echo $line | cut -d' ' -f3)
+  stop=$(echo $line | cut -d' ' -f4)
+
+  echo $chromosome - $start
+  $samToolsDir/samtools mpileup -f $genomeFile -s $bamFile -r ${chromosome}:${start}-${stop} | awk -F "\t" '{print $4}' - | awk -F: '{total+=$1} END{print total}'
+#break
+#done < $metaFile
+done < $tmpFile1
+#$samToolsDir/samtools mpileup -f $genomeFile -s $bamFile -l $tmpFile1 | awk -F "\t" '{print $1 "\t" $2 "\t" $4}' -
+
+#$samToolsDir/samtools mpileup -f $genomeFile -s $bamFile > $pileupFile
+
+#awk -F "\t" '{print $1 "\t" $2 "\t" $4}' $pileupFile > $tmpFile
+#rm -fv $pileupFile
+
+#python2 ~/Pipeline/code/MapSgrToMeta.py $tmpFile 1 $metaFile $mappedFile
+#rm -fv $tmpFile
+
+#python2 ~/Pipeline/code/SumDuplicateRowValues.py $mappedFile $geneFile
+
+#rm -fv $mappedFile
+source scripts/delete_temp_files

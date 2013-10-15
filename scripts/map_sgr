@@ -1,0 +1,43 @@
+#!/bin/bash
+
+if [ -n "$PBS_O_WORKDIR" ]
+then
+  cd "$PBS_O_WORKDIR"
+else
+  sgrDir=$1
+  sampleID=$2
+  inFilePattern="$3"
+  metaFile=$4
+  sgrSegmentSize=$5
+  outFileSuffix=$6
+fi
+
+allSgrFile=$sgrDir/${sampleID}.sgr
+
+rm -f $allSgrFile
+if [ ! -f $allSgrFile ]
+then
+  echo Concatenating $allSgrFile
+  cat $sgrDir/$inFilePattern > $allSgrFile
+fi
+ls $allSgrFile
+
+outFile=${allSgrFile/sgr/$outFileSuffix}
+
+tmpFile1=`mktemp`
+
+echo Sorting $allSgrFile
+sort $allSgrFile -k1,1 -k2,2n > $tmpFile1
+echo Copying to $allSgrFile
+cp $tmpFile1 $allSgrFile
+
+echo Mapping $allSgrFile to $metaFile
+python26 code/MapSgrToMeta.py $allSgrFile $sgrSegmentSize $metaFile $outFile.tmp
+
+echo Summarizing mapped file
+python26 code/SumDuplicateRowValues.py $outFile.tmp $outFile
+
+rm -f $outFile.tmp
+rm -f $tmpFile1
+
+exit 0

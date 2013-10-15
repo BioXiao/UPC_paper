@@ -1,0 +1,203 @@
+#!/bin/bash
+
+rawLatinDir=~/Pipeline/raw/U133A_Latin_Square
+normLatinDir=~/Pipeline/normalization/U133A_Latin_Square
+summLatinDir=~/Pipeline/summarization/U133A_Latin_Square
+probesetProbeFile=~/Pipeline/library/HG-U133A_tag.probeset_probe.tab
+matrixFilePattern=~/Pipeline/matrices/U133A_Latin_Square.%s.txt
+
+tmpFile1=`mktemp`
+tmpFile2=`mktemp`
+tmpFile3=`mktemp`
+tmpFile4=`mktemp`
+tmpFile5=`mktemp`
+
+#scripts/normalize_affy_dir "$rawLatinDir/*.CEL" True
+#scripts/summarize_affy_dir $normLatinDir $summLatinDir 1 .probeset.expr.txt
+#scripts/summarize_affy_dir $normLatinDir $summLatinDir 2 .probeset.prob.txt
+
+allExprFile=${matrixFilePattern/\%s/all.expr}
+allProbFile=${matrixFilePattern/\%s/all.prob}
+allProbbFile=${matrixFilePattern/\%s/all.probb}
+allFrmaFile=${matrixFilePattern/\%s/all.frma}
+allBarcFile=${matrixFilePattern/\%s/all.barc}
+allBarpFile=${matrixFilePattern/\%s/all.barp}
+allBarlFile=${matrixFilePattern/\%s/all.barl}
+allBarzFile=${matrixFilePattern/\%s/all.barz}
+allMas5File=${matrixFilePattern/\%s/all.mas5}
+allRmaFile=${matrixFilePattern/\%s/all.rma}
+
+#scripts/buildMatrix "$summLatinDir/*.expr.txt" $allExprFile
+#python code/ReplaceText.py $allExprFile "12_13_02_U133A_Mer_Latin_Square_" "" $allExprFile
+#python code/ReplaceText.py $allExprFile ".expr.txt" "" $allExprFile
+
+#scripts/buildMatrix "$summLatinDir/*.prob.txt" $allProbFile
+#python code/ReplaceText.py $allProbFile "12_13_02_U133A_Mer_Latin_Square_" "" $allProbFile
+#python code/ReplaceText.py $allProbFile ".prob.txt" "" $allProbFile
+
+#python code/TransformData.py $allProbFile True barcode 2 $allProbbFile
+
+#mkdir -p $rawLatinDir/Temp
+#cp -v $rawLatinDir/*.CEL $rawLatinDir/Temp/
+#for f in $rawLatinDir/Temp/*.CEL
+#do
+#  python code/ReplaceText.py $f "HG-U133A_tag.1sq" "HG-U133A.1sq" $f
+#done
+###scripts/ConvertCels $rawLatinDir
+#Rscript --vanilla code/FrmaNormalize.R $rawLatinDir/Temp $allFrmaFile $allBarcFile $allBarpFile $allBarlFile $allBarzFile
+#rm -rf $rawLatinDir/Temp
+#python code/ReplaceText.py $allFrmaFile "12_13_02_U133A_Mer_Latin_Square_" "" $allFrmaFile
+#python code/ReplaceText.py $allBarcFile "12_13_02_U133A_Mer_Latin_Square_" "" $allBarcFile
+#python code/ReplaceText.py $allBarpFile "12_13_02_U133A_Mer_Latin_Square_" "" $allBarpFile
+#python code/ReplaceText.py $allBarlFile "12_13_02_U133A_Mer_Latin_Square_" "" $allBarlFile
+#python code/ReplaceText.py $allBarzFile "12_13_02_U133A_Mer_Latin_Square_" "" $allBarzFile
+#python code/ReplaceText.py $allFrmaFile ".CEL" "" $allFrmaFile
+#python code/ReplaceText.py $allBarcFile ".CEL" "" $allBarcFile
+#python code/ReplaceText.py $allBarpFile ".CEL" "" $allBarpFile
+#python code/ReplaceText.py $allBarlFile ".CEL" "" $allBarlFile
+#python code/ReplaceText.py $allBarzFile ".CEL" "" $allBarzFile
+
+#Rscript --vanilla code/Mas5Normalize.R $rawLatinDir $allMas5File
+#Rscript --vanilla code/RmaNormalize.R $rawLatinDir $allRmaFile
+#python code/ReplaceText.py $allMas5File "12_13_02_U133A_Mer_Latin_Square_" "" $allMas5File
+#python code/ReplaceText.py $allRmaFile "12_13_02_U133A_Mer_Latin_Square_" "" $allRmaFile
+#python code/ReplaceText.py $allMas5File ".CEL" "" $allMas5File
+#python code/ReplaceText.py $allRmaFile ".CEL" "" $allRmaFile
+
+function createGroupFile {
+  inFile="$1"
+  columnIndices="$2"
+  filterExpression="$3"
+  outFile="$4"
+
+  python code/SelectColumns.py $inFile $columnIndices $tmpFile1
+  python code/FilterFile.py $tmpFile1 "x[0] in [${filterExpression}]" 1 $outFile
+}
+
+function createGroupFiles {
+  createGroupFile $allExprFile "$1" "$2" ${matrixFilePattern/\%s/Group${3}.expr}
+  createGroupFile $allProbFile "$1" "$2" ${matrixFilePattern/\%s/Group${3}.prob}
+  createGroupFile $allProbbFile "$1" "$2" ${matrixFilePattern/\%s/Group${3}.probb}
+  createGroupFile $allFrmaFile "$1" "$2" ${matrixFilePattern/\%s/Group${3}.frma}
+  createGroupFile $allBarcFile "$1" "$2" ${matrixFilePattern/\%s/Group${3}.barc}
+  createGroupFile $allBarpFile "$1" "$2" ${matrixFilePattern/\%s/Group${3}.barp}
+  createGroupFile $allBarlFile "$1" "$2" ${matrixFilePattern/\%s/Group${3}.barl}
+  createGroupFile $allBarzFile "$1" "$2" ${matrixFilePattern/\%s/Group${3}.barz}
+  createGroupFile $allMas5File "$1" "$2" ${matrixFilePattern/\%s/Group${3}.mas5}
+  createGroupFile $allRmaFile "$1" "$2" ${matrixFilePattern/\%s/Group${3}.rma}
+}
+
+#rm -f matrices/U133A_Latin_Square.*Group*.txt
+#createGroupFiles "0,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15" "'203508_at','204563_at','204513_s_at'" 1
+#createGroupFiles "0,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,1,2,3,4,5,6,7,8,9,10,11,12" "'204205_at','204959_at','207655_s_at'" 2
+#createGroupFiles "0,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,1,2,3,4,5,6,7,8,9" "'204836_at','205291_at','209795_at'" 3
+#createGroupFiles "0,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,1,2,3,4,5,6" "'207777_s_at','204912_at','205569_at'" 4
+#createGroupFiles "0,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,1,2,3" "'207160_at','205692_s_at','212827_at'" 5
+#createGroupFiles "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42" "'209606_at','205267_at','204417_at'" 6
+#createGroupFiles "0,40,41,42,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39" "'205398_s_at','209734_at','209354_at'" 7
+#createGroupFiles "0,37,38,39,40,41,42,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36" "'206060_s_at','205790_at','200665_s_at'" 8
+#createGroupFiles "0,34,35,36,37,38,39,40,41,42,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33" "'207641_at','207540_s_at','204430_s_at'" 9
+#createGroupFiles "0,31,32,33,34,35,36,37,38,39,40,41,42,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30" "'203471_s_at','204951_at','207968_s_at'" 10
+#createGroupFiles "0,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27" "'AFFX-r2-TagA_at','AFFX-r2-TagB_at','AFFX-r2-TagC_at'" 11
+#createGroupFiles "0,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24" "'AFFX-r2-TagD_at','AFFX-r2-TagE_at','AFFX-r2-TagF_at'" 12
+#createGroupFiles "0,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21" "'AFFX-r2-TagG_at','AFFX-r2-TagH_at','AFFX-DapX-3_at'" 13
+#createGroupFiles "0,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18" "'AFFX-LysX-3_at','AFFX-PheX-3_at','AFFX-ThrX-3_at'" 14
+
+#for dataType in expr prob probb frma barc barp barl barz mas5 rma
+#do
+#  cat matrices/U133A_Latin_Square.Group*.$dataType.txt > $tmpFile1
+#  python code/FilterFile.py $tmpFile1 "'Expt' not in x[1]" 1 matrices/U133A_Latin_Square.AllGroups.$dataType.txt
+#done
+#rm -fv matrices/U133A_Latin_Square.Group*
+
+###########################################################################
+#rm -f raw/CCLE/*.CEL raw/GSK_CL/*.CEL
+#python code/FilterFile.py raw/CCLE/ccle_gsk_nondegraded_translator.txt "x[1] != '' and len(x) > 4 and x[4] != ''" 1 $tmpFile1
+#python code/ReconcileCancerCellLineFiles.py $tmpFile1 raw/CCLE/All raw/GSK_CL/All raw/CCLE raw/GSK_CL
+
+#scripts/normalize_affy_dir "/fslhome/srp33/Pipeline/raw/CCLE/*.CEL" True
+
+#rm ~/SCAN/raw/*
+#rm ~/SCAN/normalized/*
+#rm ~/SCAN/summarized/*
+#cp -v raw/GSK_CL/*.CEL ~/SCAN/raw/
+#cp -v normalization/GSK_CL/* ~/SCAN/normalized/
+#cd ~/SCAN
+#./scripts/convert_cels
+#cd ~/SCAN
+#./scripts/summarize
+#cp ~/SCAN/summarized/* ~/Pipeline/summarization/GSK_CL_BrainArray/
+#./scripts/buildMatrix "summarization/GSK_CL_BrainArray/*" matrices/GSK_CL_BrainArray.expr.txt
+##########################################################
+
+#scripts/summarize_affy_dir /fslhome/srp33/Pipeline/normalization/CCLE /fslhome/srp33/Pipeline/summarization/CCLE 1 .expr.txt Affy
+#scripts/summarize_affy_dir /fslhome/srp33/Pipeline/normalization/CCLE /fslhome/srp33/Pipeline/summarization/CCLE 2 .prob.txt Affy
+#scripts/summarize_affy_dir /fslhome/srp33/Pipeline/normalization/CCLE /fslhome/srp33/Pipeline/summarization/CCLE 3 .raw.txt Affy
+
+#scripts/normalize_affy_dir "/fslhome/srp33/Pipeline/raw/GSK_CL/*.CEL" True
+
+#scripts/summarize_affy_dir /fslhome/srp33/Pipeline/normalization/GSK_CL /fslhome/srp33/Pipeline/summarization/GSK_CL 1 .expr.txt Affy
+#scripts/summarize_affy_dir /fslhome/srp33/Pipeline/normalization/GSK_CL /fslhome/srp33/Pipeline/summarization/GSK_CL 2 .prob.txt Affy
+#scripts/summarize_affy_dir /fslhome/srp33/Pipeline/normalization/GSK_CL /fslhome/srp33/Pipeline/summarization/GSK_CL 3 .raw.txt Affy
+
+#scripts/buildMatrix2 "/fslhome/srp33/Pipeline/summarization/CCLE/*.expr.txt" matrices/CCLE.expr.txt
+#scripts/buildMatrix2 "/fslhome/srp33/Pipeline/summarization/CCLE/*.prob.txt" matrices/CCLE.prob.txt
+#scripts/buildMatrix2 "/fslhome/srp33/Pipeline/summarization/CCLE/*.raw.txt" matrices/CCLE.raw.txt
+#scripts/buildMatrix2 "/fslhome/srp33/Pipeline/summarization/GSK_CL/*.expr.txt" matrices/GSK_CL.expr.txt
+#scripts/buildMatrix2 "/fslhome/srp33/Pipeline/summarization/GSK_CL/*.prob.txt" matrices/GSK_CL.prob.txt
+#scripts/buildMatrix2 "/fslhome/srp33/Pipeline/summarization/GSK_CL/*.raw.txt" matrices/GSK_CL.raw.txt
+
+#python code/TransformData.py matrices/CCLE.prob.txt True barcode 2 matrices/CCLE.probb.txt
+#python code/TransformData.py matrices/GSK_CL.prob.txt True barcode 2 matrices/GSK_CL.probb.txt
+
+#Rscript --vanilla code/RmaNormalize.R raw/CCLE/ matrices/CCLE.rma.txt
+#Rscript --vanilla code/FrmaNormalize.R raw/CCLE/ matrices/CCLE.frma.txt matrices/CCLE.barc.txt matrices/CCLE.barp.txt
+#Rscript --vanilla code/Mas5Normalize.R raw/CCLE/ matrices/CCLE.mas5.txt
+
+#Rscript --vanilla code/RmaNormalize.R raw/GSK_CL/ matrices/GSK_CL.rma.txt
+#Rscript --vanilla code/FrmaNormalize.R raw/GSK_CL/ matrices/GSK_CL.frma.txt matrices/GSK_CL.barc.txt matrices/GSK_CL.barp.txt
+#Rscript --vanilla code/Mas5Normalize.R raw/GSK_CL/ matrices/GSK_CL.mas5.txt
+
+#for dataType in expr rma frma mas5 raw
+#for dataType in expr rma frma mas5
+#for dataType in prob barp barc
+#for dataType in prob barp
+#for dataType in probb
+#do
+#  echo $dataType
+#  python code/CompareMatrices.py matrices/CCLE.$dataType.txt matrices/GSK_CL.$dataType.txt False pearson output/CancerCellLines.pearson.$dataType.txt
+#  python code/CompareMatrices.py matrices/CCLE.$dataType.txt matrices/GSK_CL.$dataType.txt False spearman output/CancerCellLines.spearman.$dataType.txt
+
+#  ~/SIGNATURE/CreatePathwaySignature matrices/RAS_Control.$dataType.txt matrices/RAS_Expr.$dataType.txt matrices/CCLE.$dataType.txt output/CCLE_RAS_Pathway_${dataType} yes
+#  ~/SIGNATURE/CreatePathwaySignature matrices/RAS_Control.$dataType.txt matrices/RAS_Expr.$dataType.txt matrices/GSK_CL.$dataType.txt output/GSK_CL_RAS_Pathway_${dataType} yes
+
+#  python code/AddSuffixToMatrixHeaderItems.py matrices/CCLE.$dataType.txt .CCLE $tmpFile1
+#  python code/AddSuffixToMatrixHeaderItems.py matrices/GSK_CL.$dataType.txt .GSK_CL $tmpFile2
+#  python code/TransposeData.py $tmpFile1 $tmpFile3
+#  python code/TransposeData.py $tmpFile2 $tmpFile4
+#  tail -n +2 $tmpFile4 > $tmpFile5
+#  cat $tmpFile3 $tmpFile5 > $tmpFile1
+#  python code/TransposeData.py $tmpFile1 $tmpFile2
+#  python code/SelectRandomMatrixRows.py $tmpFile2 True 10000 matrices/CellLines.$dataType.txt
+#
+#  python code/AppendCancerCellLineClasses.py matrices/CCLE.$dataType.txt ~/compute/ML-Flex-ProbCodes/InputData/CCLE.$dataType.txt
+#  python code/AppendCancerCellLineClasses.py matrices/GSK_CL.$dataType.txt ~/compute/ML-Flex-ProbCodes/InputData/GSK_CL.$dataType.txt
+#  python code/AppendCancerCellLineClasses.py matrices/CellLines.$dataType.txt ~/compute/ML-Flex-ProbCodes/InputData/CellLines.$dataType.txt
+#done
+###########################################################################
+
+#rm -f ~/SCAN/raw/*
+#rm -f ~/SCAN/normalized/*
+#rm -f ~/SCAN/summarized/*
+#rm -f ~/SCAN/matrices/*
+#cp raw/TCGA-Exon/TCGA-04-1335.CEL ~/SCAN/raw/Exon.CEL
+#cp raw/TCGA-U133/TCGA-04-1335.CEL ~/SCAN/raw/U133.CEL
+#cd ~/SCAN
+#./scripts/normalize
+#./scripts/summarize 1 .expr.txt
+#./scripts/matricize ~/Pipeline/matrices/TCGA-OV.expr.txt
+#rm ~/SCAN/summarized/*
+#./scripts/summarize 2 .prob.txt
+#./scripts/matricize ~/Pipeline/matrices/TCGA-OV.prob.txt
+
+rm -f $tmpFile1 $tmpFile2 $tmpFile3 $tmpFile4 $tmpFile5

@@ -1,0 +1,33 @@
+#!/bin/bash
+
+samFile=$1
+genomeFile=$2
+metaFile=$3
+pileupsFile=$4
+geneFile=$5
+
+source scripts/rnaseq/paths
+
+currentDir=`pwd`
+dataDir=`dirname $samFile`
+cd $dataDir
+
+bamFile=${samFile/\.sam/.bam}
+
+$samToolsDir/samtools view -bS $samFile > $bamFile
+rm -f $samFile
+$samToolsDir/samtools sort $bamFile $bamFile.mod
+$samToolsDir/samtools index $bamFile.mod.bam
+
+mv $bamFile.mod.bam $bamFile
+mv $bamFile.mod.bam.bai ${bamFile/\.bam/.bai}
+
+$samToolsDir/samtools mpileup -f $genomeFile -s $bamFile > $pileupsFile.tmp
+python2 ~/Pipeline/code/SelectColumns.py $pileupsFile.tmp 0,1,3 $pileupsFile
+rm -f $pileupsFile.tmp
+
+python2 ~/Pipeline/code/MapSgrToMeta.py $pileupsFile 1 $metaFile $geneFile.tmp
+python2 ~/Pipeline/code/SumDuplicateRowValues.py $geneFile.tmp $geneFile
+rm $geneFile.tmp
+
+cd $currentDir

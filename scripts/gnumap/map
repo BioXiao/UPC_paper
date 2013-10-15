@@ -1,0 +1,23 @@
+#!/bin/bash
+
+ppn=$1
+fastQFile=$2
+genomeFastaFile=$3
+outPath=$4
+otherParams="$5"
+deleteFastQ="$6"
+
+rm -f ${outPath}*
+
+gnumap/bin/gnumap \
+  -g $genomeFastaFile \
+  -o $outPath \
+  -c $ppn \
+  -v 1 \
+  $otherParams \
+  $fastQFile
+
+if [ "$deleteFastQ" == "TRUE" ]
+then
+  rm $fastQFile
+fi

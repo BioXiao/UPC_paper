@@ -1,0 +1,18 @@
+#!/bin/bash
+
+rawDirPattern="$1"
+outputRawIntensities="$2"
+
+rm -f SCAN/raw/*
+rm -f SCAN/normalized/*
+
+cp -v $rawDirPattern SCAN/raw/
+
+cd ~/Pipeline/SCAN
+
+scripts/convert_cels
+
+for f in raw/*
+do
+  qsub ~/Pipeline/scripts/normalize_affy_file.script -v inFile="$f",outputRawIntensities="$outputRawIntensities"
+done

@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# This is to be called after scripts/normalize_affy_dir
+
+normDir="$1"
+summDir="$2"
+dataColumnIndex=$3
+outFileSuffix=$4
+geneProbeMapFile="$5"
+summarizeFunction="$6"
+
+mkdir -p $normDir
+cp -v ~/Pipeline/SCAN/normalized/* $normDir/
+
+cd ~/Pipeline/SCAN
+
+rm -f affy_normalize.*
+rm -f summarized/*
+
+for f in raw/*.CEL
+do
+  scripts/summarizeFile $f $dataColumnIndex $outFileSuffix "$geneProbeMapFile" "$summarizeFunction"
+done
+
+mkdir -p $summDir
+cp -v summarized/* $summDir/

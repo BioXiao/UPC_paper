@@ -1,0 +1,23 @@
+#!/bin/bash
+# Combines files and leaves the header of the first one intact
+
+inFilePattern="$1"
+outFile=$2
+
+for inFile in $inFilePattern
+do
+  if [ ! -f $outFile ]
+  then
+    cp $inFile $outFile
+  else
+    # Surely there's a better way to do this, but...
+    tmpFile1=`mktemp`
+    tmpFile2=`mktemp`
+
+    tail -n +2 $inFile > $tmpFile1
+    cat $outFile $tmpFile1 > $tmpFile2
+
+    mv $tmpFile2 $outFile
+    rm $tmpFile1
+  fi
+done

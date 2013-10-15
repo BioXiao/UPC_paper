@@ -1,0 +1,32 @@
+#!/bin/bash
+
+inFilePattern="$1"
+outFile=$2
+
+source scripts/create_temp_files
+
+rm -f $outFile
+
+for f in $inFilePattern
+do
+  name=`basename $f`
+  echo $f
+
+  if [ -f $outFile ]
+  then
+    cp $f $tmpFile1
+    python2 code/InsertHeader.py $tmpFile1 "Gene\t$name"
+    python2 code/transposeData.py $tmpFile1 $tmpFile2
+    tail -1 $tmpFile2 > $tmpFile1
+    cat $outFile $tmpFile1 > $tmpFile2
+    mv $tmpFile2 $outFile
+  else
+    cp $f $tmpFile1
+    python2 code/InsertHeader.py $tmpFile1 "Gene\t$name"
+    python2 code/transposeData.py $tmpFile1 $outFile
+  fi
+done
+
+python2 code/transposeData.py $outFile $outFile
+
+source scripts/delete_temp_files

@@ -1,0 +1,1 @@
+~/AffyPowerTools/apt-1.14.3-src/sdk/output/amd64-pc-linux/bin/apt-cel-convert --in-place --format xda $1/*.CEL

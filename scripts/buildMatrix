@@ -1,0 +1,30 @@
+#!/bin/bash
+
+inFilePattern="$1"
+outFile=$2
+
+source scripts/create_temp_files
+
+rm -f $outFile
+
+header=
+
+for f in $inFilePattern
+do
+  echo $f
+  if [ ! -f $outFile ]
+  then
+    cp $f $outFile
+  else
+    cp $f $tmpFile1
+    python2 code/InnerJoin.py $outFile $tmpFile1 0 0 $tmpFile2 True
+    mv $tmpFile2 $outFile
+  fi
+
+  fileDescription=`basename $f`
+  header=`echo -e "${header}\t$fileDescription"`
+done
+
+./scripts/prepend_string_to_file "$header" $outFile
+
+source scripts/delete_temp_files

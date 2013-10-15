@@ -1,0 +1,24 @@
+#!/bin/bash
+
+fastqFile=$1
+adapterSequence=$2
+
+source scripts/rnaseq/paths
+
+currentDir=`pwd`
+dataDir=`dirname $fastqFile`
+cd $dataDir
+
+if [ -n "$adapterSequence" ]
+then
+  $cutadaptFile -a $adapterSequence $fastqFile > $fastqFile.mod
+  mv $fastqFile.mod $fastqFile
+fi
+
+rm -f $fastqFile.trimmed*
+perl $solexaQADir/DynamicTrim.pl -bwa $fastqFile
+perl $solexaQADir/LengthSort.pl -l 32 $fastqFile.trimmed
+mv $fastqFile.trimmed.single $fastqFile
+rm -f $fastqFile.trimmed*
+
+cd $currentDir

@@ -1,0 +1,51 @@
+#!/bin/bash
+
+sraUrl=$1
+dataDir=$2
+parameters="$3"
+trimLength=$4
+
+source scripts/rnaseq/paths
+
+id=`basename $sraUrl`
+id=${id/\.sra/}
+tmpDir=$dataDir/$id
+fastqFile1=$tmpDir/${id}_1.fastq
+fastqFile2=$tmpDir/${id}_2.fastq
+outBamFile=$dataDir/$id.tophat.bam
+
+if [ -f $outBamFile ]
+then
+  echo $outBamFile already exists
+  exit
+fi
+
+mkdir -p $tmpDir
+
+if [ ! -f $fastqFile1 ]
+then
+  currentDir=`pwd`
+  cd $tmpDir
+
+  wget $sraUrl
+  ~/Pipeline/scripts/sra_to_fastq $id.sra
+  rm $id.sra
+
+  cd $currentDir
+fi
+
+if [ "$trimLength" != "" ]
+then
+  python2 ~/Pipeline/code/TrimFastQSequences.py $fastqFile1 $trimLength $fastqFile1.tmp
+  mv $fastqFile1.tmp  $fastqFile1
+
+  if [ -f $fastqFile2 ]
+  then
+    python2 ~/Pipeline/code/TrimFastQSequences.py $fastqFile2 $trimLength $fastqFile2.tmp
+    mv $fastqFile2.tmp  $fastqFile2
+  fi
+fi
+
+#scripts/rnaseq/process_tophat "$tmpDir/*.fastq" "$parameters" "$tmpDir" "$outBamFile"
+
+rm -rfv $tmpDir
